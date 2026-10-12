@@ -1,1 +1,192 @@
-index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>Daily Character Checklist</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#111827;color:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
+main{max-width:650px;margin:auto;padding:24px 17px 65px}
+h1{font-size:27px;line-height:1.2;margin:12px 0}
+.subtitle{color:#aab4c4;font-size:14px}
+.panel{background:#1f2937;border:1px solid #374151;border-radius:15px;padding:18px;margin:18px 0}
+.progress-row{display:flex;justify-content:space-between;align-items:center}
+#count{font-size:25px;font-weight:700}
+#percent{font-size:23px;font-weight:700}
+.track{height:12px;background:#374151;border-radius:20px;overflow:hidden;margin-top:14px}
+#bar{height:100%;width:0;background:#60a5fa;transition:width .2s}
+h2{font-size:18px;margin:0 0 4px}
+.source{color:#9ca3af;font-size:12px;margin-bottom:14px}
+.task{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #374151;cursor:pointer}
+.task:last-child{border-bottom:0}
+.task input{width:21px;height:21px;min-width:21px;accent-color:#60a5fa;margin-top:2px}
+.task span{font-size:15px}
+.task input:checked+span{color:#9ca3af;text-decoration:line-through}
+textarea{width:100%;min-height:110px;background:#111827;border:1px solid #4b5563;border-radius:10px;padding:12px;color:white;font:inherit;resize:vertical}
+button{border:1px solid #64748b;background:#374151;color:white;padding:12px 17px;border-radius:9px;font-weight:600;margin:7px 7px 0 0}
+button:active{opacity:.7}
+footer{text-align:center;color:#9ca3af;font-size:13px;margin-top:30px}
+</style>
+</head>
+<body>
+<main>
+<h1>Daily Maturity & Character Checklist</h1>
+<div class="subtitle">Plato · Aristotle · Alexander · Caesar · Napoleon</div>
+<div class="panel">
+<div class="progress-row">
+<div><div class="subtitle">TODAY'S PROGRESS</div><div id="count">0 / 25</div></div>
+<div id="percent">0%</div>
+</div>
+<div class="track"><div id="bar"></div></div>
+</div>
+<div id="sections"></div>
+<div class="panel">
+<h2>Daily Reflection</h2>
+<p class="subtitle">What did I handle well? Where did I fall short? What will I correct tomorrow?</p>
+<textarea id="reflection" placeholder="Write your honest assessment..."></textarea>
+</div>
+<button id="copy">Copy Checklist</button>
+<button id="reset">Reset Today</button>
+<footer>Discipline · Wisdom · Courage · Responsibility</footer>
+</main>
+<script>
+const groups=[
+{title:"Morning — Discipline & Preparation",source:"Aristotle · Napoleon",tasks:[
+"Wake up when planned. No unnecessary snoozing.",
+"Make my bed and maintain personal hygiene.",
+"Dress neatly and present myself appropriately.",
+"Review my responsibilities and establish today's priorities.",
+"Begin my first important task without procrastinating."
+]},
+{title:"Throughout the Day — Self-Mastery",source:"Plato · Aristotle · Caesar",tasks:[
+"Think before speaking; avoid unnecessary words.",
+"Maintain composure when frustrated, criticized, or disrespected.",
+"Speak clearly, honestly, and confidently.",
+"Listen carefully without interrupting.",
+"Avoid gossip, boasting, and seeking validation.",
+"Admit when I am wrong or do not know something.",
+"Treat everyone with dignity and respect."
+]},
+{title:"Action — Courage & Responsibility",source:"Alexander · Caesar · Napoleon",tasks:[
+"Complete my most important responsibility.",
+"Do something difficult instead of avoiding it.",
+"Exercise or actively support my physical recovery.",
+"Keep every promise and fulfill my obligations.",
+"Take initiative without waiting to be told.",
+"Make decisions based on reason, not temporary emotions.",
+"Give appropriate attention to family and those who depend on me."
+]},
+{title:"Evening — Reflection & Improvement",source:"Plato · Aristotle",tasks:[
+"Read or study something meaningful for at least 15 minutes.",
+"Put my belongings and living space in order.",
+"Review my spending and avoid unnecessary purchases.",
+"Identify one mistake and what I learned from it.",
+"Evaluate whether I acted with courage, justice, and self-control.",
+"Prepare tomorrow's priorities and get adequate sleep."
+]}
+];
+const tasks=groups.flatMap(g=>g.tasks);
+const date=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+let currentDate=date();
+const key=()=> "character-checklist-"+currentDate;
+function load(){
+try{return JSON.parse(localStorage.getItem(key()))||{}}catch(e){return {}}
+}
+let state=load();
+const container=document.getElementById("sections");
+let index=0;
+groups.forEach(group=>{
+const panel=document.createElement("section");
+panel.className="panel";
+const heading=document.createElement("h2");
+heading.textContent=group.title;
+panel.appendChild(heading);
+const source=document.createElement("div");
+source.className="source";
+source.textContent=group.source;
+panel.appendChild(source);
+group.tasks.forEach(task=>{
+const id=index++;
+const label=document.createElement("label");
+label.className="task";
+const checkbox=document.createElement("input");
+checkbox.type="checkbox";
+checkbox.checked=!!state[id];
+checkbox.dataset.id=id;
+const span=document.createElement("span");
+span.textContent=task;
+label.append(checkbox,span);
+panel.appendChild(label);
+checkbox.addEventListener("change",()=>{
+checkDate();
+state[id]=checkbox.checked;
+save();
+update();
+});
+});
+container.appendChild(panel);
+});
+const reflection=document.getElementById("reflection");
+reflection.value=state.reflection||"";
+function save(){
+try{localStorage.setItem(key(),JSON.stringify(state))}catch(e){}
+}
+function update(){
+const completed=tasks.filter((_,i)=>state[i]).length;
+const percentage=Math.round(completed/tasks.length*100);
+document.getElementById("count").textContent=completed+" / "+tasks.length;
+document.getElementById("percent").textContent=percentage+"%";
+document.getElementById("bar").style.width=percentage+"%";
+}
+function refresh(){
+document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+cb.checked=!!state[cb.dataset.id];
+});
+reflection.value=state.reflection||"";
+update();
+}
+function checkDate(){
+if(date()!==currentDate){
+currentDate=date();
+state=load();
+refresh();
+}
+}
+reflection.addEventListener("input",()=>{
+checkDate();
+state.reflection=reflection.value;
+save();
+});
+document.getElementById("reset").addEventListener("click",()=>{
+if(confirm("Reset today's checklist and reflection?")){
+state={};
+save();
+refresh();
+}
+});
+document.getElementById("copy").addEventListener("click",async()=>{
+checkDate();
+const output=groups.map(g=>g.title+"\n"+g.tasks.map(t=>{
+const i=tasks.indexOf(t);
+return(state[i]?"[x] ":"[ ] ")+t;
+}).join("\n")).join("\n\n")+"\n\nReflection:\n"+reflection.value;
+try{
+await navigator.clipboard.writeText(output);
+alert("Checklist copied.");
+}catch(e){
+alert("Copy unavailable in this browser.");
+}
+});
+document.addEventListener("visibilitychange",()=>{
+if(!document.hidden)checkDate();
+});
+window.addEventListener("focus",checkDate);
+checkDate();
+update();
+</script>
+</body>
+</html>
+
